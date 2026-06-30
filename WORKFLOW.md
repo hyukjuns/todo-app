@@ -1,5 +1,33 @@
 # 작업 워크플로우 (Day02 - Todo)
 
+## 12. Google 로그인 인증 추가
+
+**사용자 프롬프트:**
+> google 로그인을 추가하는 계획으로 변경해줘, 즉 사용자가 google 인증으로 로그인 해야만 todo app을 사용 가능하도록 해보고싶어
+
+**수행 작업 요약:**
+- `AUTH-PLAN.md` 생성 — Google OAuth 기반 인증 구현 계획 작성 (GitHub Pages URL 기준)
+- `index.html` 수정
+  - 기존 `.container` → 로그인 섹션(`#auth-section`)과 앱 섹션(`#app-section`)으로 분리
+  - Google 로그인 버튼, 프로필 사진(`#user-avatar`), 이메일 표시, 로그아웃 버튼 추가
+- `app.js` 수정
+  - `currentUser` 전역 변수 추가
+  - `signInWithGoogle()`: `db.auth.signInWithOAuth({ provider: 'google' })` 로 Google 페이지 이동
+  - `signOut()`: `db.auth.signOut()` 로그아웃
+  - `db.auth.onAuthStateChange()`: 로그인/로그아웃/새로고침 시 UI 자동 전환
+  - `showApp()` / `showAuth()`: 섹션 표시/숨김 + 프로필 정보 반영
+  - `addTodo()`: `user_id: currentUser.id` 추가 (RLS 정책 연동)
+  - 기존 `renderTodos()` 등 조회 쿼리는 RLS 자동 필터링으로 변경 없음
+- `style.css` 수정
+  - `.auth-section`, `.google-btn`, `.app-header`, `.user-info`, `.user-avatar`, `#logout-btn`, `.hidden` 스타일 추가
+
+**Supabase 수동 작업 (완료):**
+- `todos` 테이블에 `user_id` 컬럼 추가 + RLS 정책 교체 (`public access` → `user isolation`)
+- Redirect URL에 `https://hyukjuns.github.io/todo-app/` 등록
+- Google Cloud Console OAuth 앱 등록 + Supabase Google Provider 활성화
+
+---
+
 ## 2. Todo 앱 구현
 
 **사용자 프롬프트:**
@@ -14,6 +42,42 @@
   - `renderTodos()` — 목록 전체 재렌더링
   - `addTodo()` / `toggleTodo()` / `deleteTodo()` — CRUD
   - Enter 키로 할일 추가 지원
+
+---
+
+## 11. Supabase 연동 코드 적용
+
+**사용자 프롬프트:**
+> SUPABASE.md 중 6번까지 했는데 잘 했는지 체크해줘, 그리고 그 다음 supabase 환경에 맞게 코드 수정해줘
+
+**수행 작업 요약:**
+- 6단계 체크 결과: CDN 스크립트가 `<html>` 태그 앞에 잘못 삽입됨 → `<head>` 안으로 이동
+- `index.html` 수정 — `<script src="supabase-js@2">` 위치를 `<head>` 내부로 정정
+- `app.js` 전체 재작성 — localStorage → Supabase 비동기 방식으로 전환
+  - `loadTodos()`: `db.from('todos').select('*').order('position')` 비동기 조회
+  - `addTodo()`: `db.insert()`, position은 현재 count 값 사용
+  - `toggleTodo(id, currentDone)`: `db.update({ done: !currentDone })`
+  - `deleteCheckedTodos()`: `db.delete().eq('done', true)`
+  - 드래그 drop 핸들러: 새 순서로 `position` 일괄 `update` (Promise.all)
+  - 모든 함수 `async/await` 패턴으로 전환, 에러 시 `console.error` 처리
+
+---
+
+## 10. Supabase 연동 가이드 작성
+
+**사용자 프롬프트:**
+> todo app의 데이터 저장을 supabase로 바꿀게, supabase 처음 사용하는건데 어떻게 시작해서 백앤드로 사용할지 가이드가 필요해 해당 가이드를 SUPABASE.md로 작성해줘, 그리고 데이터 테이블 구조도 알맞게 작성해줘
+
+**수행 작업 요약:**
+- `SUPABASE.md` 생성 — 아래 내용 포함
+  - 프로젝트 생성 (supabase.com 가입 → 새 프로젝트)
+  - 테이블 생성 SQL (`todos`: id/text/done/priority/position/created_at)
+  - RLS 설정 (anon 전체 허용 정책)
+  - API 키 확인 방법 (Project URL, anon key)
+  - CDN으로 supabase-js 클라이언트 추가
+  - 초기화 코드 및 CRUD 예시 (조회/추가/토글/삭제/순서변경)
+  - localStorage → Supabase 전환 시 주요 변경 포인트 (비동기 전환, position 컬럼 등)
+  - 기존 localStorage 데이터 마이그레이션 스크립트
 
 ---
 

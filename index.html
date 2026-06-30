@@ -5,14 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Todo</title>
   <link rel="stylesheet" href="style.css">
-  <!-- Supabase JS 클라이언트: app.js보다 먼저 로드해야 supabase 객체 사용 가능 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-  <div class="container">
-    <h1>Todo</h1>
 
-    <!-- 할일 입력 영역: 텍스트 입력 + 중요도 선택 + 추가 버튼 + 삭제 버튼 -->
+  <!-- 로그인 화면: 비로그인 상태에서만 표시 -->
+  <div id="auth-section" class="auth-section">
+    <h1>Todo</h1>
+    <p class="auth-desc">Google 계정으로 로그인하세요</p>
+    <button id="google-login-btn" class="google-btn">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" width="20">
+      Google로 로그인
+    </button>
+    <p id="auth-message"></p>
+  </div>
+
+  <!-- 앱 화면: 로그인 후에만 표시 -->
+  <div id="app-section" class="container hidden">
+    <div class="app-header">
+      <h1>Todo</h1>
+      <div class="user-info">
+        <img id="user-avatar" class="user-avatar" src="" alt="" width="28" height="28">
+        <span id="user-email-display"></span>
+        <button id="logout-btn">로그아웃</button>
+      </div>
+    </div>
+
+    <!-- 할일 입력 영역 -->
     <div class="input-row">
       <input type="text" id="todo-input" placeholder="할일을 입력하세요" autocomplete="off">
       <select id="priority-select">
@@ -21,15 +40,13 @@
         <option value="low">낮음</option>
       </select>
       <button id="add-btn">추가</button>
-      <!-- 삭제 버튼: 항상 표시, 체크 항목 없으면 비활성화 -->
       <button id="delete-checked-btn" disabled>삭제</button>
     </div>
 
-    <!-- 할일 목록: app.js의 renderTodos()가 동적으로 <li> 항목을 삽입 -->
+    <!-- 할일 목록 -->
     <ul id="todo-list"></ul>
   </div>
 
-  <!-- body 닫기 직전에 로드: DOM이 완전히 파싱된 후 스크립트 실행 보장 -->
   <script src="app.js"></script>
 </body>
 </html>
