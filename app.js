@@ -1,5 +1,9 @@
-// localStorage에서 todos를 식별하기 위한 키
-const STORAGE_KEY = 'day02-todos';
+// Supabase 프로젝트 연결 정보
+const SUPABASE_URL = 'https://jkjufqisybwebmraoisg.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_D_-u7665CwuJbxnHJaAnww_S_06HBoL';
+
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // 드래그 중인 todo의 id를 추적 (dragstart ~ drop 사이에 유지)
 let dragSrcId = null;
@@ -7,19 +11,14 @@ let dragSrcId = null;
 // 중요도 레이블 매핑
 const PRIORITY_LABELS = { high: '높음', medium: '중간', low: '낮음' };
 
-// localStorage에서 todos 배열을 읽어 반환
-// JSON 파싱 실패(손상된 데이터) 시 빈 배열로 초기화
-function loadTodos() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-  } catch {
-    return [];
-  }
-}
-
-// todos 배열을 JSON 문자열로 직렬화해 localStorage에 저장
-function saveTodos(todos) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+// Supabase에서 todos 전체 조회 (position 오름차순)
+async function loadTodos() {
+  const { data, error } = await db
+    .from('todos')
+    .select('*')
+    .order('position', { ascending: true });
+  if (error) { console.error('loadTodos 오류:', error); return []; }
+  return data;
 }
 
 // 체크된(done) 항목 유무에 따라 삭제 버튼 활성/비활성 전환
@@ -30,19 +29,19 @@ function updateBulkActions(todos) {
 
 // 현재 todos를 기반으로 목록 전체를 DOM에 다시 그린다
 // 상태 변경(추가/토글/삭제/순서변경) 후 항상 이 함수를 호출해 화면을 동기화
-function renderTodos() {
-  const todos = loadTodos();
+async function renderTodos() {
+  const todos = await loadTodos();
   const list = document.getElementById('todo-list');
   list.innerHTML = ''; // 기존 항목 전부 제거 후 재렌더링
 
-  updateBulkActions(todos); // 체크 항목 유무에 따라 일괄 삭제 버튼 표시 여부 갱신
+  updateBulkActions(todos);
 
   todos.forEach(todo => {
     const li = document.createElement('li');
     // 완료 상태이면 .done 클래스 추가 → CSS에서 취소선 적용
     if (todo.done) li.classList.add('done');
 
-    // 드래그 핸들: 사용자가 잡고 드래그할 영역
+    // 드래그 핸들
     const handle = document.createElement('span');
     handle.className = 'drag-handle';
     handle.textContent = '⠿';
@@ -51,9 +50,10 @@ function renderTodos() {
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.checked = todo.done;
-    checkbox.addEventListener('change', () => toggleTodo(todo.id));
+    // 현재 done 값을 직접 전달해 추가 조회 없이 토글
+    checkbox.addEventListener('change', () => toggleTodo(todo.id, todo.done));
 
-    // 중요도 뱃지: 기존 데이터에 priority 없으면 'medium' 기본값
+    // 중요도 뱃지
     const priority = todo.priority || 'medium';
     const badge = document.createElement('span');
     badge.className = `priority-badge priority-${priority}`;
@@ -66,7 +66,6 @@ function renderTodos() {
 
     // --- 드래그 앤 드롭 이벤트 ---
 
-    // draggable 속성을 li 전체에 적용
     li.draggable = true;
 
     // 드래그 시작: 현재 항목의 id를 전역 변수에 저장하고 반투명 처리
@@ -94,20 +93,25 @@ function renderTodos() {
       li.classList.add('drag-over');
     });
 
-    // 드롭: 드래그 소스와 드롭 대상의 배열 인덱스를 교환해 순서 변경
-    li.addEventListener('drop', e => {
+    // 드롭: 새 순서로 배열 재정렬 후 position 값 일괄 업데이트
+    li.addEventListener('drop', async e => {
       e.preventDefault();
-      if (dragSrcId === todo.id) return; // 자기 자신 위에 드롭 시 무시
+      if (dragSrcId === todo.id) return;
 
-      const todos = loadTodos();
-      const srcIdx = todos.findIndex(t => t.id === dragSrcId);
-      const dstIdx = todos.findIndex(t => t.id === todo.id);
+      const current = await loadTodos();
+      const srcIdx = current.findIndex(t => t.id === dragSrcId);
+      const dstIdx = current.findIndex(t => t.id === todo.id);
 
       // splice로 소스 항목을 제거한 뒤 대상 위치에 삽입
-      const [moved] = todos.splice(srcIdx, 1);
-      todos.splice(dstIdx, 0, moved);
+      const [moved] = current.splice(srcIdx, 1);
+      current.splice(dstIdx, 0, moved);
 
-      saveTodos(todos);
+      // 새 순서를 position 컬럼에 반영 (0부터 순서대로)
+      await Promise.all(
+        current.map((t, i) =>
+          db.from('todos').update({ position: i }).eq('id', t.id)
+        )
+      );
       renderTodos();
     });
 
@@ -120,30 +124,44 @@ function renderTodos() {
 }
 
 // 새 todo 항목 추가
-// 공백만 입력된 경우 무시
-function addTodo(text, priority) {
+// 현재 항목 수를 position으로 사용해 항상 맨 아래에 추가
+async function addTodo(text, priority) {
   const trimmed = text.trim();
   if (!trimmed) return;
 
-  const todos = loadTodos();
-  // id로 Date.now() 사용: 밀리초 타임스탬프로 고유성 보장
-  todos.push({ id: Date.now(), text: trimmed, done: false, priority });
-  saveTodos(todos);
+  // 현재 총 개수를 position 기본값으로 사용
+  const { count, error: countError } = await db
+    .from('todos')
+    .select('*', { count: 'exact', head: true });
+  if (countError) { console.error('count 오류:', countError); return; }
+
+  const { error } = await db.from('todos').insert({
+    text: trimmed,
+    done: false,
+    priority,
+    position: count ?? 0
+  });
+  if (error) { console.error('addTodo 오류:', error); return; }
   renderTodos();
 }
 
 // 특정 id의 todo 완료 상태를 반전
-function toggleTodo(id) {
-  const todos = loadTodos().map(t =>
-    t.id === id ? { ...t, done: !t.done } : t
-  );
-  saveTodos(todos);
+async function toggleTodo(id, currentDone) {
+  const { error } = await db
+    .from('todos')
+    .update({ done: !currentDone })
+    .eq('id', id);
+  if (error) { console.error('toggleTodo 오류:', error); return; }
   renderTodos();
 }
 
 // 체크된(done) 항목 전체 일괄 삭제
-function deleteCheckedTodos() {
-  saveTodos(loadTodos().filter(t => !t.done));
+async function deleteCheckedTodos() {
+  const { error } = await db
+    .from('todos')
+    .delete()
+    .eq('done', true);
+  if (error) { console.error('deleteCheckedTodos 오류:', error); return; }
   renderTodos();
 }
 
@@ -168,5 +186,5 @@ document.getElementById('todo-input').addEventListener('keydown', e => {
 // 일괄 삭제 버튼 클릭: 체크된 항목 전체 제거
 document.getElementById('delete-checked-btn').addEventListener('click', deleteCheckedTodos);
 
-// 페이지 로드 시 localStorage에 저장된 todos를 화면에 표시
+// 페이지 로드 시 Supabase에서 todos를 조회해 화면에 표시
 renderTodos();
