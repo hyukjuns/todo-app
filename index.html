@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Todo</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Todo</h1>
+
+    <!-- 할일 입력 영역: 텍스트 입력 + 중요도 선택 + 추가 버튼 + 삭제 버튼 -->
+    <div class="input-row">
+      <!-- autocomplete="off": 브라우저 자동완성 제안 비활성화 -->
+      <input type="text" id="todo-input" placeholder="할일을 입력하세요" autocomplete="off">
+      <!-- 중요도 선택 셀렉트: 기본값 중간 -->
+      <select id="priority-select">
+        <option value="high">높음</option>
+        <option value="medium" selected>중간</option>
+        <option value="low">낮음</option>
+      </select>
+      <button id="add-btn">추가</button>
+      <!-- 삭제 버튼: 항상 표시, 체크 항목 없으면 비활성화 -->
+      <button id="delete-checked-btn" disabled>삭제</button>
+    </div>
+
+    <!-- 할일 목록: app.js의 renderTodos()가 동적으로 <li> 항목을 삽입 -->
+    <!-- 드래그 앤 드롭으로 순서 변경 가능 -->
+    <ul id="todo-list"></ul>
+  </div>
+
+  <!-- body 닫기 직전에 로드: DOM이 완전히 파싱된 후 스크립트 실행 보장 -->
+  <script src="app.js"></script>
+</body>
+</html>

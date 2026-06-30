@@ -1,0 +1,204 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+  background: #f0f4ff;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 48px 16px;
+}
+
+.container {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+  padding: 32px;
+  width: 100%;
+  max-width: 520px;
+  height: fit-content;
+}
+
+h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 24px;
+}
+
+.input-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+#todo-input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1.5px solid #d0d7f0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+#todo-input:focus {
+  border-color: #5c6bc0;
+}
+
+/* 중요도 선택 셀렉트 */
+#priority-select {
+  padding: 10px 8px;
+  border: 1.5px solid #d0d7f0;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-family: inherit;
+  color: #2c2c4a;
+  background: #fff;
+  outline: none;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.15s;
+}
+
+#priority-select:focus {
+  border-color: #5c6bc0;
+}
+
+#add-btn {
+  padding: 10px 18px;
+  background: #5c6bc0;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+  flex-shrink: 0;
+}
+
+#add-btn:hover {
+  background: #4a5ab0;
+}
+
+/* 삭제 버튼: input-row 안에 위치, 추가 버튼 오른쪽 */
+#delete-checked-btn {
+  padding: 6px 14px;
+  background: #fff0f0;
+  color: #e05c5c;
+  border: 1px solid #f5c0c0;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+#delete-checked-btn:hover:not(:disabled) {
+  background: #e05c5c;
+  color: #fff;
+}
+
+/* 체크 항목 없을 때: 흐리게 표시해 비활성 상태 전달 */
+#delete-checked-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+#todo-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#todo-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: #f8f9ff;
+  border-radius: 8px;
+  border: 1px solid #e8ecf8;
+  transition: opacity 0.15s, border-color 0.15s, background 0.15s;
+}
+
+/* 드래그 중인 항목: 반투명 처리 */
+#todo-list li.dragging {
+  opacity: 0.4;
+}
+
+/* 드롭 대상 위치 표시: 파란 상단 테두리로 삽입 위치 안내 */
+#todo-list li.drag-over {
+  border-color: #5c6bc0;
+  background: #eef0fb;
+}
+
+/* 드래그 핸들: 마우스를 올리면 grab 커서로 변경 */
+.drag-handle {
+  color: #b0b8d8;
+  font-size: 1.1rem;
+  cursor: grab;
+  flex-shrink: 0;
+  user-select: none;
+  line-height: 1;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+}
+
+#todo-list li input[type="checkbox"] {
+  width: 17px;
+  height: 17px;
+  accent-color: #5c6bc0;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* 중요도 뱃지 공통 스타일 */
+.priority-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+
+/* 높음: 빨간 계열 */
+.priority-high {
+  background: #ffe5e5;
+  color: #d63030;
+}
+
+/* 중간: 주황 계열 */
+.priority-medium {
+  background: #fff3e0;
+  color: #c97a00;
+}
+
+/* 낮음: 초록 계열 */
+.priority-low {
+  background: #e6f7ec;
+  color: #2e8a4a;
+}
+
+#todo-list li span.todo-text {
+  flex: 1;
+  font-size: 0.95rem;
+  color: #2c2c4a;
+  word-break: break-all;
+}
+
+#todo-list li.done span.todo-text {
+  text-decoration: line-through;
+  color: #a0a8c8;
+}
+
